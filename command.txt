@@ -1,0 +1,2 @@
+az group create -n eastusrg -l eastus
+az group deployment create -n pingvmcreate -g eastusrg --template-file ./LGEVDIPingTestMachine_template.json

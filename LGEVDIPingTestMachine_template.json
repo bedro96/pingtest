@@ -412,7 +412,7 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "https://raw.githubusercontent.com/bedro96/linuxscripts/master/rttedgeip1.sh"
+                        "https://raw.githubusercontent.com/bedro96/pingtest/master/rttedgeip1.sh"
                     ],
                     "commandToExecute": "sh ./rttedgeip1.sh"
                 },
