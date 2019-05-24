@@ -1,2 +1,4 @@
 az group create -n eastusrg -l eastus
 az group deployment create -n pingvmcreate -g eastusrg --template-file ./LGEVDIPingTestMachine_template.json
+ssh to machine 
+cat /var/lib/waagent/Microsoft.OSTCExtensions.CustomScriptForLinux-1.5.4/download/0/output.txt
