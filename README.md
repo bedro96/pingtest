@@ -1,0 +1,1 @@
+*** Ping Testing from Azure ***
