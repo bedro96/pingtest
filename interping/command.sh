@@ -50,7 +50,7 @@ koreacentralID=$(az network vnet show --name koreacentral2 -g koreacentral2rg --
 echo $koreacentralID
 westindiaID=$(az network vnet show --name westindiavnet -g westindiarg --query id --out tsv)
 echo $westindiaID
-austrliaeastID=$(az network vnet show --name australiaeastvnet -g australiaeastrg --query id --out tsv)
+australiaeastID=$(az network vnet show --name australiaeastvnet -g australiaeastrg --query id --out tsv)
 echo $australiaeastID
 southeastasiaID=$(az network vnet show --name southeastasiavnet -g southeastasiarg --query id --out tsv)
 echo $southeastasiaID
@@ -81,4 +81,3 @@ az network vnet peering create -n australiaeasttok -g australiaeastrg --vnet-nam
 
 az network vnet peering create -n koreaTosoutheastasia -g koreacentral2rg --vnet-name koreacentral2 --remote-vnet-id $southeastasiaID --allow-vnet-access
 az network vnet peering create -n southeastasiatok -g southeastasiarg --vnet-name southeastasiavnet --remote-vnet-id $koreacentralID --allow-vnet-access
-
