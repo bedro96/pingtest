@@ -1,0 +1,405 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "vnetName": {
+        "type": "string",
+        "defaultValue": "brazilsouthvnet",
+        "metadata": {
+          "description": "Name for the new VNet."
+        }
+      },
+      "vnetPrefix": {
+        "type": "string",
+        "defaultValue": "10.103.0.0/16",
+        "metadata": {
+          "description": "CIDR prefix for the VNet address space."
+        }
+      },
+      "HPCComputeSubnet": {
+        "type": "string",
+        "defaultValue": "HPCComputeSubnet",
+        "metadata": {
+          "description": "Name for the HPC Compute Subnet."
+        }
+      },
+      "HPCComputeSubnetPrefix": {
+        "type": "string",
+        "defaultValue": "10.103.2.0/24",
+        "metadata": {
+          "description": "CIDR address prefix for the front end subnet."
+        }
+      },
+      "StorageType": {
+        "type": "string",
+        "defaultValue": "Standard_LRS",
+        "allowedValues": [
+          "Standard_LRS",
+          "Standard_GRS",
+          "Standard_ZRS",
+          "Premium_LRS"
+        ],
+        "metadata": {
+          "description": "Storage type."
+        }
+      },
+      "HPCComputeSubnetNSGName":{
+        "type": "string",
+        "defaultValue": "frontEnd-nsg",
+        "metadata": {
+          "description": "NSG for subnet"
+        }
+      },
+      "osType": {
+        "type": "string",
+        "defaultValue": "Linux",
+        "allowedValues": [
+          "Windows",
+          "Linux"
+        ],
+        "metadata": {
+          "description": "Type of OS to use for VMs: Windows or CentOS."
+        }
+      },
+      "scaleNumber": {
+        "type": "int",
+        "defaultValue": 1,
+        "metadata": {
+          "description": "Number of Virtual Machines to provision"
+        }
+      },
+      "vmSize": {
+          "type": "string",
+          "defaultValue": "Standard_D4s_v3",
+          "allowedValues": [
+              "Standard_DS1_v2",
+              "Standard_D2s_v3",
+              "Standard_D4s_v3"
+          ],
+          "metadata": {
+            "description": "Size of Virtual Machines to provision"
+          }
+        },
+      "vmName":{
+          "type": "string",
+          "defaultValue": "HPCComNode",
+          "maxLength": 15,
+          "metadata": {
+              "description": "Name of the machine"
+          }
+      },
+      "adminUsername": {
+        "type": "string",
+        "defaultValue": "ubuntuadmin",
+        "metadata": { "description": "Username for local admin account." }
+      },
+      "adminPassword": {
+        "type": "securestring",
+        "defaultValue": "dpfwlwjswk!!22",
+        "metadata": { "description": "Password for local admin account." }
+      },
+      "autoShutdownStatus": {
+          "type": "string",
+          "defaultValue": "Disabled",
+          "allowedValues": [
+              "Enabled",
+              "Disabled"
+          ]
+      },
+      "autoShutdownTime": {
+          "type": "string",
+          "defaultValue": "22:00"
+      },
+      "autoShutdownTimeZone": {
+          "type": "string",
+          "defaultValue": "Korea Standard Time"
+      },
+      "autoShutdownNotificationStatus": {
+          "type": "string",
+          "defaultValue": "Disabled",
+          "allowedValues": [
+              "Enabled",
+              "Disabled"
+          ]
+      },
+      "publicIPAddressType": {
+          "type": "string",
+          "defaultValue": "Static",
+          "allowedValues": [
+            "Dynamic",
+            "Static"
+          ],
+          "metadata": {
+            "description": "Public IP type for Load Balancer"
+          }
+        }
+      },
+    "variables": {
+      "webVMSettings": {
+        "Windows": {
+          "vmSize": "[parameters('vmSize')]",
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2016-Datacenter",
+          "version": "latest",
+          "vmName": "[parameters('vmName')]",
+          "osdisk": "[concat(parameters('vmName'),'osdisk')]",
+          "nicName": "[concat(parameters('vmName'),'nic')]",
+          "pipName": "[concat(parameters('vmName'),'pip')]"
+        },
+        "Linux": {
+          "vmSize": "[parameters('vmSize')]",
+          "publisher": "Canonical",
+          "offer": "UbuntuServer",
+          "sku": "16.04-LTS",
+          "version": "16.04.201905140",
+          "vmName": "[parameters('vmName')]",
+          "osdisk": "[concat(parameters('vmName'),'osdisk')]",
+          "nicName": "[concat(parameters('vmName'),'nic')]",
+          "pipName": "[concat(parameters('vmName'),'pip')]"
+        }
+      },
+      "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('vnetName'))]",
+      "frontEndSubnetRef": "[concat(variables('vnetID'),'/subnets/',parameters('HPCComputeSubnet'))]",
+      "webVMSetting": "[variables('webVMSettings')[parameters('osType')]]",
+      "availabilitySetName": "[concat(parameters('vmName'),'avSet')]",
+      "virtualNetworkName": "virtualNetwork1",
+      "publicIPAddressName": "lbpip1",
+      "subnetName": "subnet1",
+      "loadBalancerName": "loadBalancer1",
+      "nicName": "vmNic",
+      "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+      "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
+      "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+      "nicId": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]",
+      "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
+      "backEndIPConfigID": "[concat(variables('nicId'),'/ipConfigurations/ipconfig1')]",
+      "apiVersion": "2015-06-15",
+      "imageName": "myCustomImage"
+    },
+      "resources": [
+
+        {
+          "apiVersion": "2015-06-15",
+          "type": "Microsoft.Network/networkSecurityGroups",
+          "name": "[parameters('HPCComputeSubnetNSGName')]",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "NSG - Front End"
+          },
+          "properties": {
+            "securityRules": [
+              {
+                "name": "SSH-rule",
+                "properties": {
+                  "description": "Allow SSH",
+                  "protocol": "Tcp",
+                  "sourcePortRange": "*",
+                  "destinationPortRange": "22",
+                  "sourceAddressPrefix": "Internet",
+                  "destinationAddressPrefix": "*",
+                  "access": "Allow",
+                  "priority": 1100,
+                  "direction": "Inbound"
+                }
+              },
+              {
+                "name": "rdp-rule",
+                "properties": {
+                  "description": "Allow RDP",
+                  "protocol": "Tcp",
+                  "sourcePortRange": "*",
+                  "destinationPortRange": "3389",
+                  "sourceAddressPrefix": "Internet",
+                  "destinationAddressPrefix": "*",
+                  "access": "Allow",
+                  "priority": 1200,
+                  "direction": "Inbound"
+                }
+              },
+              {
+                "name": "web-rule",
+                "properties": {
+                  "description": "Allow WEB",
+                  "protocol": "Tcp",
+                  "sourcePortRange": "*",
+                  "destinationPortRange": "80",
+                  "sourceAddressPrefix": "Internet",
+                  "destinationAddressPrefix": "*",
+                  "access": "Allow",
+                  "priority": 1300,
+                  "direction": "Inbound"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "Microsoft.Compute/availabilitySets",
+          "name": "[variables('availabilitySetName')]",
+          "apiVersion": "2016-04-30-preview",
+          "location": "[resourceGroup().location]",
+          "properties": {
+            "platformFaultDomainCount": 2,
+            "platformUpdateDomainCount": 10,
+            "managed" : true
+        }
+        },
+        {
+          "apiVersion": "2017-09-01",
+          "type": "Microsoft.Network/virtualNetworks",
+          "name": "[parameters('vnetName')]",
+          "location": "[resourceGroup().location]",
+          "tags": {
+            "displayName": "VNet"
+          },
+          "properties": {
+            "addressSpace": {
+              "addressPrefixes": [
+                "[parameters('vnetPrefix')]"
+              ]
+            },
+            "subnets": [
+              {
+                "name": "[parameters('HPCComputeSubnet')]",
+                "properties": {
+                  "addressPrefix": "[parameters('HPCComputeSubnetPrefix')]",
+                  "networkSecurityGroup": {
+                      "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('HPCComputeSubnetNSGName'))]"
+                  }
+                }
+              }
+            ]
+          },
+          "dependsOn": [
+              "[concat('Microsoft.Network/networkSecurityGroups/', parameters('HPCComputeSubnetNSGName'))]"
+          ]
+        },
+        {
+          "apiVersion": "2015-06-15",
+          "type": "Microsoft.Network/publicIPAddresses",
+          "name": "[variables('publicIPAddressName')]",
+          "location": "[resourceGroup().location]",
+          "properties": {
+            "publicIPAllocationMethod": "[parameters('publicIPAddressType')]"
+          }
+        },
+        {
+          "apiVersion": "2016-09-01",
+          "type": "Microsoft.Network/networkInterfaces",
+          "name": "[concat(variables('webVMSetting').nicName, copyIndex(1))]",
+          "location": "[resourceGroup().location]",
+          "copy": {
+              "name": "foo",
+              "count": "[parameters('scaleNumber')]"
+          },
+          "tags": {
+            "displayName": "[concat('NetworkInterface - ', parameters('vmName'))]"
+          },
+          "dependsOn": [
+            "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
+          ],
+          "properties": {
+            
+            "ipConfigurations": [
+              {
+                "name": "ipconfig1",
+                "properties": {
+                  "publicIPAddress": {
+                  "id": "[resourceId ('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"      
+                  },
+                  "privateIPAllocationMethod": "Dynamic",
+                  "subnet": {
+                    "id": "[variables('frontEndSubnetRef')]"
+                  }
+                }
+              }
+            ],
+            "enableAcceleratedNetworking": true
+          }
+        },
+        {
+          "apiVersion": "2017-12-01",
+          "type": "Microsoft.Compute/virtualMachines",
+          "name": "[concat(variables('webVMSetting').vmName,copyIndex(1))]",
+          "location": "[resourceGroup().location]",
+          "copy": {
+              "name": "foo",
+              "count": "[parameters('scaleNumber')]"
+          },
+          "dependsOn": [
+            "[concat('Microsoft.Network/networkInterfaces/', variables('webVMSetting').nicName, copyIndex(1))]"
+          ],
+          "tags": {
+            "displayName": "[concat('VM - ', concat(variables('webVMSetting').vmName,copyIndex(1)) )]"
+          },
+          "properties": {
+            "hardwareProfile": {
+              "vmSize": "[variables('webVMSetting').vmSize]"
+            },
+            "availabilitySet": {
+               "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]" 
+            },
+            "osProfile": {
+              "computerName": "[concat( variables('webVMSetting').vmName,copyIndex(1))]",
+              "adminUsername": "[parameters('adminUsername')]",
+              "adminPassword": "[parameters('adminPassword')]",
+              "linuxConfiguration": {
+                "disablePasswordAuthentication": false
+              }
+            },
+            "storageProfile": {
+                "imageReference": {
+                    "publisher": "[variables('webVMSetting').publisher]",
+                    "offer": "[variables('webVMSetting').offer]",
+                    "sku": "[variables('webVMSetting').sku]",
+                    "version": "[variables('webVMSetting').version]"
+            },
+                "osDisk": {
+                "name": "[concat( variables('webVMSetting').vmName,copyIndex(1),'osdisk')]",
+                "caching": "ReadWrite",
+                "createOption": "FromImage",
+                "osType" : "[parameters('osType')]",
+                "diskSizeGB": 128
+              }
+            },
+            "networkProfile": {
+              "networkInterfaces": [
+                {
+                  "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('webVMSetting').nicName,copyIndex(1)))]"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[concat('shutdown-computevm-', concat(variables('webVMSetting').vmName,copyIndex(1)))]",
+          "type": "Microsoft.DevTestLab/schedules",
+          "apiVersion": "2017-04-26-preview",
+          "location": "[resourceGroup().location]",
+          "copy": {
+              "name": "foo",
+              "count": "[parameters('scaleNumber')]"
+          },
+          "properties": {
+              "status": "[parameters('autoShutdownStatus')]",
+              "taskType": "ComputeVmShutdownTask",
+              "dailyRecurrence": {
+                  "time": "[parameters('autoShutdownTime')]"
+              },
+              "timeZoneId": "[parameters('autoShutdownTimeZone')]",
+              "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', concat(variables('webVMSetting').vmName,copyIndex(1)))]",
+              "notificationSettings": {
+                  "status": "[parameters('autoShutdownNotificationStatus')]",
+                  "timeInMinutes": "30"
+              }
+          },
+          "dependsOn": [
+              "[concat('Microsoft.Compute/virtualMachines/', concat(variables('webVMSetting').vmName,copyIndex(1)) )]"
+          ]
+        }
+      ],
+      "outputs": {
+      }
+  }
+  

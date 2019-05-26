@@ -1,0 +1,32 @@
+az group create -n eastusrg -l eastus
+az group create -n westusrg -l westus
+az group create -n canadaeastrg -l canadaeast
+az group create -n brazilsouthrg -l brazilsouth
+az group create -n uksouthrg -l uksouth
+az group create -n westeuroperg  -l westeurope
+az group create -n koreacentral2rg -l koreacentral
+az group create -n westindiarg -l westindia
+az group create -n australiaeastrg  -l australiaeast
+az group create -n southeastasiarg -l southeastasia
+
+az group deployment create -n pingvmcreate -g eastusrg --template-file ./LGEVDIPingTestMachine_eastusrg.json
+az group deployment create -n pingvmcreate -g westusrg --template-file ./LGEVDIPingTestMachine_westusrg.json
+az group deployment create -n pingvmcreate -g canadaeastrg --template-file ./LGEVDIPingTestMachine_canadaeastrg.json
+az group deployment create -n pingvmcreate -g brazilsouthrg --template-file ./LGEVDIPingTestMachine_brazilsouthrg.json
+az group deployment create -n pingvmcreate -g uksouthrg --template-file ./LGEVDIPingTestMachine_uksouthrg.json
+az group deployment create -n pingvmcreate -g westeuroperg --template-file ./LGEVDIPingTestMachine_westeuroperg.json
+az group deployment create -n pingvmcreate -g koreacentral2rg --template-file ./LGEVDIPingTestMachine_koreacentral2rg.json
+az group deployment create -n pingvmcreate -g westindiarg --template-file ./LGEVDIPingTestMachine_westindiarg.json
+az group deployment create -n pingvmcreate -g australiaeastrg --template-file ./LGEVDIPingTestMachine_australiaeastrg.json
+az group deployment create -n pingvmcreate -g southeastasiarg --template-file ./LGEVDIPingTestMachine_southeastasiarg.json
+
+az group delete -n eastusrg --no-wait --yes
+az group delete -n westusrg --no-wait --yes
+az group delete -n canadaeastrg --no-wait --yes
+az group delete -n brazilsouthrg --no-wait --yes
+az group delete -n uksouthrg --no-wait --yes
+az group delete -n westeuroperg --no-wait --yes
+az group delete -n koreacentral2rg --no-wait --yes
+az group delete -n westindiarg --no-wait --yes
+az group delete -n australiaeastrg --no-wait --yes
+az group delete -n southeastasiarg --no-wait --yes
