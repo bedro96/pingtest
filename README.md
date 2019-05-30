@@ -1,8 +1,8 @@
-### Ping Testing from Azure ###
+### Ping(RTT) Testing from Azure ###
 
 The intend of this test to identify the best Azure region to serve a service.
 The customer would like to establish three regional centers and result of this activity will 
-provide a insight for making a decision
+provide a insight for making a decision. This script has been verified to be working on Ubuntu 16.04.
 
 ## Deploy Virtual with ARM template ##
 
